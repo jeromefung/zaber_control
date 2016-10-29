@@ -86,6 +86,7 @@ def move(dist_mm):
     
 def get_current_position():
     command = bytearray([1, 60, 0, 0, 0, 0])
+    ser.write(command)
     _read_and_get_pos()
 
     

@@ -14,24 +14,28 @@ config = {'serial_port': 'COM1',
           'serial_timeout': 15.,
           'microsteps_per_micron': 6.4}
 
-# Open connection upon import
-connected = False
-ser = serial.Serial(port = config['serial_port'],
-                    baudrate = config['serial_baudrate'],
-                    timeout = config['serial_timeout'])
-try:
-    ser.open()
-    connected = True
-except serial.SerialException:
-    print('Serial connection could not be opened.')
+# Connection configuration
+ser = serial.Serial()
+ser.port = config['serial_port']
+ser.baudrate = config['serial_baudrate']
+ser.timeout = config['serial_timeout']
 
-def exit_cleanup():
-    if connected:
-        ser.close()
+def open_connection():
+    try:
+        ser.open()
+    except serial.SerialException:
+        print('Serial connection could not be opened.')
 
-atexit.register(exit_cleanup)
+def close_connection():
+    _exit_cleanup()
 
-def read_and_get_pos():
+
+def _exit_cleanup():
+    ser.close()
+
+atexit.register(_exit_cleanup)
+
+def _read_and_get_pos():
     data = ser.read(6)
     # Device outputs 6 bytes.
     # Byte 1 is the device number, byte 2 is the instruction just completed.
@@ -53,7 +57,7 @@ def home():
     ser.write(bytearray([1, 1, 0, 0, 0, 0]))
     print('Moving stage to home position.')
     time.sleep(5)
-    read_and_get_pos()
+    _read_and_get_pos()
 
     
 def move(dist_mm):
@@ -77,11 +81,11 @@ def move(dist_mm):
     command = bytearray([1, 21]) + distance_bytes
     ser.write(command)
     time.sleep(1)
-    read_and_get_pos()
+    _read_and_get_pos()
 
     
 def get_current_position():
     command = bytearray([1, 60, 0, 0, 0, 0])
-    read_and_get_pos()
+    _read_and_get_pos()
 
     

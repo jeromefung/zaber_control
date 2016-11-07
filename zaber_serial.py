@@ -11,7 +11,7 @@ import time
 # use PySerial defaults for the other options
 config = {'serial_port': 'COM1',
           'serial_baudrate': 9600,
-          'serial_timeout': 15.,
+          'serial_timeout': 0.5,
           'microsteps_per_micron': 6.4}
 
 # Connection configuration
@@ -36,7 +36,13 @@ def _exit_cleanup():
 atexit.register(_exit_cleanup)
 
 def _read_and_get_pos():
-    data = ser.read(6)
+    new_data = ser.read(6)
+    data = new_data
+
+    while new_data != b'':
+        data = new_data
+        new_data = ser.read(6)        
+    
     # Device outputs 6 bytes.
     # Byte 1 is the device number, byte 2 is the instruction just completed.
     # Subsequent bytes are the data bytes.
@@ -56,7 +62,7 @@ def home():
     '''
     ser.write(bytearray([1, 1, 0, 0, 0, 0]))
     print('Moving stage to home position.')
-    time.sleep(5)
+    time.sleep(10)
     _read_and_get_pos()
 
     
@@ -80,8 +86,13 @@ def move(dist_mm):
     # Use command 21 (move relative)
     command = bytearray([1, 21]) + distance_bytes
     ser.write(command)
-    time.sleep(1)
+    time.sleep(0.5)
     _read_and_get_pos()
+
+
+    ## TODO: we still have unexpected behavior where on a large move
+    # initially the position of 0.0 is read. get_current_position()
+    # run after the move is complete gets the correct position.
 
     
 def get_current_position():
